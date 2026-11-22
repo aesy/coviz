@@ -1,0 +1,90 @@
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.fileHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+.fname {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-variant-numeric: tabular-nums;
+}
+.codewrap {
+  overflow-x: auto;
+  border-radius: 0 0 12px 12px;
+}
+.code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  width: max-content;
+  min-width: 100%;
+  padding: 8px 0 14px;
+}
+.crow {
+  display: grid;
+  grid-template-columns: var(--lnw, 56px) 68px minmax(0, 1fr);
+  background: var(--surface);
+}
+.crow .ln,
+.crow .hits {
+  position: sticky;
+  text-align: right;
+  color: var(--muted);
+  padding-right: 12px;
+  user-select: none;
+  background: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.crow .ln {
+  left: 0;
+}
+.crow .hits {
+  left: var(--lnw, 56px);
+  font-size: 11px;
+}
+.crow pre {
+  margin: 0;
+  padding: 0 24px 0 14px;
+  white-space: pre;
+  tab-size: 4;
+}
+.crow.hit {
+  background: color-mix(in oklab, var(--good) 4%, var(--surface));
+}
+.crow.hit .hits {
+  color: var(--good-text);
+}
+.crow.miss {
+  background: color-mix(in oklab, var(--critical) 9%, var(--surface));
+}
+.crow.miss .hits {
+  color: var(--critical);
+  font-weight: 600;
+}
+.nosource {
+  padding: 18px 16px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12.5px;
+}

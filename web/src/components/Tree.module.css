@@ -1,0 +1,137 @@
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  --cols: minmax(220px, 1fr) 290px 150px 150px;
+}
+.panel.hasMcdc {
+  --cols: minmax(200px, 1fr) 240px 128px 128px 128px;
+}
+.gridHead,
+.gridRow {
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+}
+.gridHead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 12px 12px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 0;
+}
+.gridHead > div,
+.gridRow > div {
+  padding: 0 16px;
+  min-width: 0;
+}
+.gridRow {
+  border-top: 1px solid var(--hairline);
+  padding: 7px 0;
+  transition: background 100ms;
+}
+.gridRow:first-of-type {
+  border-top: none;
+}
+.gridRow:hover {
+  background: color-mix(in oklab, var(--accent) 5%, transparent);
+}
+.gridRow:last-of-type {
+  border-radius: 0 0 12px 12px;
+}
+
+.cellName {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.twisty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--muted);
+  border-radius: 5px;
+}
+.twisty:hover {
+  color: var(--ink);
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.twisty svg {
+  transition: transform 140ms ease;
+}
+.twisty[aria-expanded="true"] svg {
+  transform: rotate(90deg);
+}
+.twistyPad {
+  width: 18px;
+  flex-shrink: 0;
+}
+.cellName a {
+  overflow-wrap: anywhere;
+  padding: 1px 3px;
+  border-radius: 5px;
+}
+.cellName a:hover {
+  color: var(--accent);
+}
+.nameDir {
+  color: var(--ink);
+  font-weight: 600;
+}
+.nameFile {
+  color: var(--ink-2);
+}
+.dirSlash {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.cellLines {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cellLines :global(.meter) {
+  width: 84px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .panel {
+    --cols: minmax(160px, 1fr) 200px 110px 110px;
+  }
+  .panel.hasMcdc {
+    --cols: minmax(150px, 1fr) 170px 96px 96px 96px;
+  }
+  .cellLines :global(.meter) {
+    width: 48px;
+  }
+}
+@media (max-width: 620px) {
+  .panel {
+    --cols: minmax(120px, 1fr) 130px 64px 64px;
+  }
+  .panel.hasMcdc {
+    --cols: minmax(110px, 1fr) 110px 52px 52px 52px;
+  }
+  .cellLines :global(.meter) {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .twisty svg {
+    transition: none;
+  }
+}

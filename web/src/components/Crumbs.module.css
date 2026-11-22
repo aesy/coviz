@@ -1,0 +1,29 @@
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--mono);
+  font-size: 13px;
+  margin: 22px 0 14px;
+  color: var(--muted);
+}
+.crumbs a {
+  color: var(--ink-2);
+  padding: 1px 4px;
+  border-radius: 5px;
+}
+.crumbs a:hover {
+  color: var(--accent);
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+.sep {
+  color: var(--hairline);
+  margin: 0 2px;
+  user-select: none;
+}
+.here {
+  color: var(--ink);
+  font-weight: 600;
+  padding: 1px 4px;
+}
