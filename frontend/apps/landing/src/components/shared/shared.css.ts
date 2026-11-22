@@ -2,7 +2,7 @@ import { style } from '@vanilla-extract/css';
 import { colors } from '@/theme/colors.css';
 import { vars } from '@/theme/theme-vars';
 
-export const CONTAINER = 1600;
+export const CONTAINER = 1400;
 
 export const page = style({
   overflowX: 'clip',
