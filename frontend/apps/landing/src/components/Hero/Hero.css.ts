@@ -5,7 +5,19 @@ import { vars } from '@/theme/theme-vars';
 const tint = (color: string, amount: number) =>
   `color-mix(in oklab, ${color} ${amount}%, transparent)`;
 
-export const hero = style({ display: 'grid', gap: 32, paddingBlock: '40px 40px' });
+// The gutter has a fixed width so the font size can be derived from what is left for the text.
+const GUTTER = { number: 36, hits: 44, gap: 16, inset: 16 };
+const GUTTER_WIDTH = GUTTER.number + GUTTER.hits + GUTTER.gap + GUTTER.inset;
+
+// The longest headline line is about 7.4em wide in Bricolage Grotesque at weight 800.
+const LONGEST_LINE_EM = 7.6;
+
+export const hero = style({
+  display: 'grid',
+  gap: 32,
+  paddingBlock: '40px 40px',
+  containerType: 'inline-size',
+});
 
 export const fileTag = style({
   display: 'flex',
@@ -21,7 +33,7 @@ export const fileTagSep = style({ color: colors.hairline });
 export const headline = style({
   display: 'grid',
   fontFamily: vars.fontFamilyHeadings,
-  fontSize: 'clamp(36px, 7vw, 104px)',
+  fontSize: `min(104px, calc((100cqi - ${GUTTER_WIDTH}px) / ${LONGEST_LINE_EM}))`,
   fontWeight: 800,
   lineHeight: 1.05,
   letterSpacing: '-0.03em',
@@ -29,11 +41,11 @@ export const headline = style({
 
 export const line = style({
   display: 'grid',
-  gridTemplateColumns: '2.6em 3.4em 1fr',
-  alignItems: 'baseline',
-  paddingLeft: '0.3em',
+  gridTemplateColumns: `${GUTTER.number}px ${GUTTER.hits}px 1fr`,
+  columnGap: GUTTER.gap / 2,
+  alignItems: 'center',
+  paddingLeft: GUTTER.inset - 4,
   borderLeft: '4px solid transparent',
-  '@media': { '(max-width: 760px)': { gridTemplateColumns: '1.6em 2.6em 1fr' } },
 });
 
 export const hit = style({ borderLeftColor: colors.good, background: tint(colors.good, 7) });
@@ -44,11 +56,10 @@ export const miss = style({
 });
 
 export const gutter = style({
-  alignSelf: 'center',
-  paddingRight: '1.2em',
   fontFamily: vars.fontFamilyMonospace,
-  fontSize: '0.2em',
+  fontSize: 'clamp(11px, 1.1cqi, 15px)',
   fontWeight: 500,
+  lineHeight: 1,
   letterSpacing: 0,
   color: colors.muted,
   textAlign: 'right',
@@ -66,6 +77,8 @@ export const hits = style([
 ]);
 
 export const text = style({
+  minWidth: 0,
+  whiteSpace: 'nowrap',
   selectors: {
     [`${miss} &`]: {
       color: colors.muted,
