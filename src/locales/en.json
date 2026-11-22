@@ -1,0 +1,73 @@
+{
+  "nav": {
+    "label": "Main",
+    "formats": "Formats",
+    "output": "Output",
+    "install": "Install",
+    "github": "GitHub"
+  },
+  "hero": {
+    "file": "README.md",
+    "lines": "4 lines",
+    "covered": "75.0% covered",
+    "title": "Coverage reports, made readable.",
+    "titleLines": ["Coverage", "reports,", "unreadable.", "made <hl>readable.</hl>"],
+    "body": "Coviz turns an LCOV, JaCoCo, Cobertura or LLVM JSON report into one self-contained HTML page. Browse it locally, attach it to a CI run, or send it to someone. No server, no Node, no extra files.",
+    "download": "Download v{{version}}",
+    "source": "View source",
+    "platforms": "Linux, macOS and Windows. MIT."
+  },
+  "terminal": {
+    "label": "Example terminal session"
+  },
+  "preview": {
+    "example": "Example report",
+    "dirLabel": "Preview of a generated report, directory view",
+    "fileLabel": "Preview of a generated report, file view"
+  },
+  "formats": {
+    "eyebrow": "Input",
+    "title": "Reads what your toolchain already writes",
+    "body": "Pass the file and Coviz works out the format from its name or contents. Use <code>--format</code> when the guess needs help.",
+    "tools": {
+      "lcov": "gcov, cargo-llvm-cov, c8, Istanbul, Jest, Vitest.",
+      "jacoco": "Java and Kotlin via Gradle or Maven.",
+      "cobertura": "coverage.py, .NET coverlet, PHPUnit, gocover-cobertura.",
+      "llvm": "Clang and Rust, including MC/DC conditions."
+    }
+  },
+  "output": {
+    "eyebrow": "Output",
+    "title": "One HTML file you can actually send",
+    "body": "The report is a single page with sources, data and UI inlined. It opens offline, survives being zipped into a CI artifact, and looks the same on the reviewer's machine as on yours.",
+    "facts": {
+      "open": {
+        "title": "Straight to the browser",
+        "body": "Writes a temp file and opens it, for the quick look after a test run."
+      },
+      "artifact": {
+        "title": "Keep it as an artifact",
+        "body": "Upload it from CI next to your test results. No hosting needed."
+      },
+      "link": {
+        "title": "Every file has a link",
+        "body": "Directories and files have their own URL, so you can point at the exact gap you mean."
+      }
+    }
+  },
+  "install": {
+    "eyebrow": "Install",
+    "title": "A single binary, nothing else",
+    "body": "Prebuilt for Linux (x86-64 and ARM64), macOS (Apple silicon) and Windows (x86-64) on GitHub releases, or installed with Cargo. Other platforms build from source with stable Rust 1.100 or newer.",
+    "linux": "Linux",
+    "macos": "macOS",
+    "windows": "Windows",
+    "cargo": "Cargo"
+  },
+  "footer": {
+    "license": "coviz {{version}}, MIT license",
+    "github": "GitHub",
+    "releases": "Releases",
+    "issues": "Issues"
+  }
+}
