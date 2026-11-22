@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "frontend/**"
+      - "site/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -24,14 +24,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: frontend
+        working-directory: site
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: site/package-lock.json
       - id: pages
         uses: actions/configure-pages@v5
       - name: Install dependencies
@@ -39,10 +39,10 @@ jobs:
       - name: Run tests
         run: npm test
       - name: Build landing page
-        run: npm run build -w @coviz/landing -- --base="${{ steps.pages.outputs.base_path }}/"
+        run: npm run build -- --base="${{ steps.pages.outputs.base_path }}/"
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/apps/landing/dist
+          path: site/dist
 
   deploy:
     name: Deploy to GitHub Pages
