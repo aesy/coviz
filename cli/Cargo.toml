@@ -1,0 +1,19 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+publish = false
+description = "Code coverage report visualizer"
+
+[[bin]]
+name = "coviz"
+path = "src/main.rs"
+
+[dependencies]
+clap = { workspace = true, features = ["derive"] }
+minijinja = { workspace = true, features = ["custom_syntax"] }
+opener = { workspace = true }
+quick-xml = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }

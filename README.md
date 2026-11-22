@@ -122,9 +122,9 @@ $ cargo test
 #### Report UI
 
 The HTML report is authored as a [Vite](https://vite.dev/) + [Preact](https://preactjs.com/) project under
-[`web`](/web) and compiled into a single HTML file that the binary embeds and fills with data at runtime. The built file
-is committed, so `cargo build` needs no Node.js toolchain; run `npm run build` in the `web` directory to regenerate it
-after changing the UI. See [web/README.md](/web/README.md) for details.
+[`cli/web`](/cli/web) and compiled into a single HTML file that the binary embeds and fills with data at runtime. The built file
+is committed, so `cargo build` needs no Node.js toolchain; run `npm run build` in the `cli/web` directory to regenerate it
+after changing the UI. See [cli/web/README.md](/cli/web/README.md) for details.
 
 ## Contribute
 
