@@ -1,13 +1,24 @@
 [package]
-name = "cli"
+name = "coviz-cli"
+description = "Code coverage report visualizer"
 version.workspace = true
 edition.workspace = true
-publish = false
-description = "Code coverage report visualizer"
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+homepage.workspace = true
+repository.workspace = true
+readme = "../README.md"
+categories = ["command-line-utilities", "development-tools::testing", "visualization"]
+keywords = ["coverage", "lcov", "jacoco", "cobertura", "llvm-cov"]
+exclude = ["web"]
 
 [[bin]]
 name = "coviz"
 path = "src/main.rs"
+
+[lints]
+workspace = true
 
 [dependencies]
 clap = { workspace = true, features = ["derive"] }

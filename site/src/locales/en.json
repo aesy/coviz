@@ -15,7 +15,7 @@
     "body": "Coviz turns an LCOV, JaCoCo, Cobertura or LLVM JSON report into one self-contained HTML page. Browse it locally, attach it to a CI run, or send it to someone. No server, no Node, no extra files.",
     "download": "Download v{{version}}",
     "source": "View source",
-    "platforms": "Linux and Windows, x86-64. MIT."
+    "platforms": "Linux, macOS and Windows. MIT."
   },
   "terminal": {
     "label": "Example terminal session"
@@ -58,10 +58,11 @@
   "install": {
     "eyebrow": "Install",
     "title": "A single binary, nothing else",
-    "body": "Prebuilt for 64-bit Linux and Windows on GitHub releases. Other platforms build from source with stable Rust 1.90 or newer.",
+    "body": "Prebuilt for Linux (x86-64 and ARM64), macOS (Apple silicon) and Windows (x86-64) on GitHub releases, or installed with Cargo. Other platforms build from source with stable Rust 1.100 or newer.",
     "linux": "Linux",
+    "macos": "macOS",
     "windows": "Windows",
-    "source": "From source"
+    "cargo": "Cargo"
   },
   "footer": {
     "license": "coviz {{version}}, MIT license",

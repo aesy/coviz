@@ -14,6 +14,16 @@ const PLATFORMS: { id: string; prompt: string; lines: TerminalLine[] }[] = [
       { command: `curl -L ${links.linuxBinary} -o coviz` },
       { command: 'chmod +x coviz' },
       { command: 'sudo mv coviz /usr/local/bin' },
+      { comment: '# ARM64: coviz-linux-arm64' },
+    ],
+  },
+  {
+    id: 'macos',
+    prompt: '$',
+    lines: [
+      { command: `curl -L ${links.macosBinary} -o coviz` },
+      { command: 'chmod +x coviz' },
+      { command: 'sudo mv coviz /usr/local/bin' },
     ],
   },
   {
@@ -22,9 +32,13 @@ const PLATFORMS: { id: string; prompt: string; lines: TerminalLine[] }[] = [
     lines: [{ command: `curl -L ${links.windowsBinary} -o coviz.exe` }],
   },
   {
-    id: 'source',
+    id: 'cargo',
     prompt: '$',
-    lines: [{ command: 'cargo build --release' }, { comment: '# target/release/coviz' }],
+    lines: [
+      { command: 'cargo install coviz-cli' },
+      { comment: '# or from a clone of the repo:' },
+      { command: 'cargo build --release' },
+    ],
   },
 ];
 

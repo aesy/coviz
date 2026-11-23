@@ -1,8 +1,15 @@
-# Coviz
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./img/logo-dark.svg">
+  <img height="70" alt="Coviz" src="./img/logo-light.svg">
+</picture>
 
+[![Crate][crate-image]][crate-url]
 [![Build Status][github-actions-image]][github-actions-url]
 [![Test coverage][codecov-image]][codecov-url]
 [![MIT license][license-image]][license-url]
+
+[crate-image]: https://img.shields.io/crates/v/coviz-cli?style=flat-square
+[crate-url]: https://crates.io/crates/coviz-cli
 
 [github-actions-image]: https://img.shields.io/github/actions/workflow/status/aesy/coviz/ci.yml?branch=main&style=flat-square
 [github-actions-url]: https://github.com/aesy/coviz/actions
@@ -14,7 +21,11 @@
 [license-url]: https://github.com/aesy/coviz/blob/main/LICENSE
 
 Turns a code coverage report into a modern, self-contained HTML page you can browse or share. It reads LCOV, 
-JaCoCo XML, Cobertura XML and LLVM JSON. `Coviz` is available as a native single-binary Linux/Windows CLI tool.
+JaCoCo XML, Cobertura XML and LLVM JSON. `Coviz` is available as a native single-binary Linux/macOS/Windows CLI tool.
+
+[Visit the website](https://aesy.github.io/coviz/) to see what it can do.
+
+<img src="./img/screenshot.png" alt="Coviz report showing line, function and branch coverage per directory and file">
 
 ## Usage
 
@@ -24,6 +35,12 @@ Point `Coviz` at a coverage report and either write the result to a file or open
 coviz --input coverage.info --open            # open report in the browser
 coviz --input jacoco.xml --output report.html # write report to file
 ```
+
+With only `--open`, the report is written to the system's temp directory before it is opened.
+
+The report is a single HTML file with no external requests, so it can be attached to a CI run or sent to someone as-is.
+Source files found on disk are embedded so every file can be read with its covered and missed lines highlighted. Relative
+paths in the coverage report are resolved against the report's own directory, and files over 2 MB are left out.
 
 CLI options can be viewed via the CLI's help command:
 
@@ -45,19 +62,44 @@ Options:
   -V, --version          Print version
 ```
 
-## Installation:
+### Supported formats
+
+| Format         | `--format`  | Detected from                                   | Produced by, for example                                                    |
+|----------------|-------------|-------------------------------------------------|-----------------------------------------------------------------------------|
+| LCOV           | `lcov`      | `.lcov`/`.info` extension or `lcov` in the name | `cargo llvm-cov --lcov`, Jest/Vitest `coverage/lcov.info`, `lcov --capture` |
+| JaCoCo XML     | `jacoco`    | `.xml` with a `<report>` root element           | Gradle `jacocoTestReport`, Maven `jacoco:report`                            |
+| Cobertura XML  | `cobertura` | `.xml` with a `<coverage>` root element         | coverage.py `coverage xml`, Coverlet `coverage.cobertura.xml`               |
+| LLVM JSON      | `llvm-json` | `.json` extension                               | `llvm-cov export -format=text`, `cargo llvm-cov --json`                     |
+
+If the file name doesn't give the format away, `Coviz` looks at the content instead. Pass `--format` to skip
+detection entirely.
+
+## Installation
 
 ### Binaries
 
-The latest stable `Coviz` releases are available as [prebuilt binaries for 64-bit Linux and Windows under Github
-releases](https://github.com/aesy/coviz/releases). Binaries for other platforms have to be built from source.
+The latest stable `Coviz` releases are available as [prebuilt binaries under GitHub
+releases](https://github.com/aesy/coviz/releases) for Linux (x86_64 and ARM64, statically linked), macOS (Apple Silicon) and
+Windows (x86_64). Binaries for other platforms have to be built from source.
 
 #### Linux
 
 Example on how to download and install a `Coviz` binary using [curl](https://curl.se/):
 
 ```shell
-curl -L https://github.com/aesy/coviz/releases/download/v0.1.0/coviz-linux-amd64 -o coviz
+curl -L https://github.com/aesy/coviz/releases/latest/download/coviz-linux-amd64 -o coviz
+chmod +x coviz
+sudo mv coviz /usr/local/bin
+```
+
+On ARM64, download `coviz-linux-arm64` instead.
+
+#### macOS
+
+Example on how to download and install a `Coviz` binary using [curl](https://curl.se/):
+
+```shell
+curl -L https://github.com/aesy/coviz/releases/latest/download/coviz-macos-arm64 -o coviz
 chmod +x coviz
 sudo mv coviz /usr/local/bin
 ```
@@ -67,10 +109,18 @@ sudo mv coviz /usr/local/bin
 Example on how to download a `Coviz` binary using [curl](https://curl.se/):
 
 ```shell
-curl -L https://github.com/aesy/coviz/releases/download/v0.1.0/coviz-windows-amd64.exe -o coviz.exe
+curl -L https://github.com/aesy/coviz/releases/latest/download/coviz-windows-amd64.exe -o coviz.exe
 ```
 
-#### Build from source
+### Cargo
+
+`Coviz` is published on [crates.io](https://crates.io/crates/coviz-cli) as `coviz-cli` and installs the `coviz` binary:
+
+```shell
+cargo install coviz-cli
+```
+
+### Build from source
 
 To build the CLI, run the following command:
 
@@ -87,9 +137,10 @@ at [Rust's platform support page](https://doc.rust-lang.org/nightly/rustc/platfo
 
 #### Prerequisites
 
-* [Rust Stable 1.90.0+](https://www.rust-lang.org/tools/install)
+* [Rust Stable 1.100.0+](https://www.rust-lang.org/tools/install)
 * [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-* [Node.js](https://nodejs.org/) – only needed to change the HTML report UI, see [Report UI](#report-ui)
+* [Rust Nightly](https://rust-lang.github.io/rustup/concepts/channels.html) - only for formatting, see [Linting](#linting)
+* [Node.js](https://nodejs.org/) - only needed to change the HTML report UI, see [Report UI](#report-ui)
 
 #### Build
 
@@ -104,11 +155,12 @@ $ cargo build
 ##### Linting
 
 This project uses [rustfmt](https://github.com/rust-lang/rustfmt) for formatting and
-[clippy](https://github.com/rust-lang/rust-clippy) for linting. Run them with:
+[clippy](https://github.com/rust-lang/rust-clippy) for linting. The formatting config uses unstable options, so
+rustfmt has to run on the nightly channel:
 
 ```shell
-$ cargo fmt
-$ cargo clippy
+$ cargo +nightly fmt
+$ cargo clippy --all-targets
 ```
 
 ##### Unit/Integration/Doc Testing

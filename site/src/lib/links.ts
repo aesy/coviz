@@ -6,6 +6,7 @@ export const links = {
   repo: REPO,
   releases: `${REPO}/releases`,
   issues: `${REPO}/issues`,
-  linuxBinary: `${REPO}/releases/download/v${VERSION}/coviz-linux-amd64`,
-  windowsBinary: `${REPO}/releases/download/v${VERSION}/coviz-windows-amd64.exe`,
+  linuxBinary: `${REPO}/releases/latest/download/coviz-linux-amd64`,
+  macosBinary: `${REPO}/releases/latest/download/coviz-macos-arm64`,
+  windowsBinary: `${REPO}/releases/latest/download/coviz-windows-amd64.exe`,
 };

@@ -20,7 +20,7 @@
     "@mantine/core": "9.8.2",
     "@mantine/hooks": "9.8.2",
     "@mantine/vanilla-extract": "9.8.2",
-    "i18next": "27.2.4",
+    "i18next": "27.2.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-i18next": "18.0.3"
