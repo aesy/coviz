@@ -22,7 +22,7 @@ struct SourceFile {
 struct Parser {
     files: Vec<SourceFile>,
     index: HashMap<String, usize>,
-    stack: Vec<Vec<u8>>,
+    stack: Vec<String>,
     package: String,
     class_methods: HashMap<String, (u64, u64)>,
     class_sourcefile: Option<String>,
@@ -53,13 +53,13 @@ pub fn parse(content: &str) -> Result<Report, Error> {
             Event::Start(e) => {
                 parser.open(e.name().as_ref(), &e);
 
-                parser.stack.push(e.name().as_ref().to_vec());
+                parser.stack.push(e.name().as_ref().to_owned());
             }
             Event::Empty(e) => parser.open(e.name().as_ref(), &e),
             Event::End(e) => {
                 parser.stack.pop();
 
-                if e.name().as_ref() == b"sourcefile" {
+                if e.name().as_ref() == "sourcefile" {
                     parser.close_sourcefile();
                 }
             }
@@ -73,16 +73,16 @@ pub fn parse(content: &str) -> Result<Report, Error> {
 }
 
 impl Parser {
-    fn open(&mut self, name: &[u8], e: &BytesStart) {
+    fn open(&mut self, name: &str, e: &BytesStart) {
         match name {
-            b"package" => {
-                self.package = attr(e, b"name").unwrap_or_default();
+            "package" => {
+                self.package = attr(e, "name").unwrap_or_default();
 
                 self.class_methods.clear();
             }
-            b"class" => self.class_sourcefile = attr(e, b"sourcefilename"),
-            b"sourcefile" => {
-                let name = attr(e, b"name").unwrap_or_default();
+            "class" => self.class_sourcefile = attr(e, "sourcefilename"),
+            "sourcefile" => {
+                let name = attr(e, "name").unwrap_or_default();
                 let path = if self.package.is_empty() {
                     name
                 } else {
@@ -99,18 +99,18 @@ impl Parser {
 
                 self.current = Some(slot);
             }
-            b"line" => self.on_line(e),
-            b"counter" => self.on_counter(e),
+            "line" => self.on_line(e),
+            "counter" => self.on_counter(e),
             _ => {}
         }
     }
 
     fn on_line(&mut self, e: &BytesStart) {
         let Some(slot) = self.current else { return };
-        let Some(nr) = attr_u64(e, b"nr") else { return };
-        let covered_instr = attr_u64(e, b"ci").unwrap_or(0);
-        let missed_branches = attr_u64(e, b"mb").unwrap_or(0);
-        let covered_branches = attr_u64(e, b"cb").unwrap_or(0);
+        let Some(nr) = attr_u64(e, "nr") else { return };
+        let covered_instr = attr_u64(e, "ci").unwrap_or(0);
+        let missed_branches = attr_u64(e, "mb").unwrap_or(0);
+        let covered_branches = attr_u64(e, "cb").unwrap_or(0);
         let file = &mut self.files[slot];
 
         file.line_hits
@@ -122,20 +122,20 @@ impl Parser {
     }
 
     fn on_counter(&mut self, e: &BytesStart) {
-        if attr(e, b"type").as_deref() != Some("METHOD") {
+        if attr(e, "type").as_deref() != Some("METHOD") {
             return;
         }
 
-        let missed = attr_u64(e, b"missed").unwrap_or(0);
-        let covered = attr_u64(e, b"covered").unwrap_or(0);
+        let missed = attr_u64(e, "missed").unwrap_or(0);
+        let covered = attr_u64(e, "covered").unwrap_or(0);
 
-        match self.stack.last().map(Vec::as_slice) {
-            Some(b"sourcefile") => {
+        match self.stack.last().map(String::as_str) {
+            Some("sourcefile") => {
                 if let Some(slot) = self.current {
                     self.files[slot].methods = Some((missed + covered, covered));
                 }
             }
-            Some(b"class") => {
+            Some("class") => {
                 if let Some(source) = &self.class_sourcefile {
                     let entry = self.class_methods.entry(source.clone()).or_insert((0, 0));
 

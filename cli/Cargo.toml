@@ -12,7 +12,7 @@ path = "src/main.rs"
 [dependencies]
 clap = { workspace = true, features = ["derive"] }
 json_comments = { workspace = true }
-minijinja = { workspace = true, features = ["custom_syntax"] }
+minijinja = { workspace = true }
 opener = { workspace = true }
 quick-xml = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

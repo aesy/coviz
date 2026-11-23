@@ -63,7 +63,7 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                     method_depth,
                 );
 
-                if e.name().as_ref() == b"method" {
+                if e.name().as_ref() == "method" {
                     method_depth += 1;
                 }
             }
@@ -77,7 +77,7 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                     method_depth,
                 );
             }
-            Event::End(e) if e.name().as_ref() == b"method" => {
+            Event::End(e) if e.name().as_ref() == "method" => {
                 method_depth = method_depth.saturating_sub(1);
             }
             _ => {}
@@ -90,7 +90,7 @@ pub fn parse(content: &str) -> Result<Report, Error> {
 }
 
 fn on_element(
-    name: &[u8],
+    name: &str,
     e: &BytesStart,
     files: &mut Vec<FileAcc>,
     index: &mut HashMap<String, usize>,
@@ -98,8 +98,8 @@ fn on_element(
     method_depth: usize,
 ) {
     match name {
-        b"class" => {
-            let filename = attr(e, b"filename").unwrap_or_default();
+        "class" => {
+            let filename = attr(e, "filename").unwrap_or_default();
             let slot = *index.entry(filename.clone()).or_insert_with(|| {
                 files.push(FileAcc {
                     path: filename.clone(),
@@ -111,11 +111,11 @@ fn on_element(
 
             *current = Some(slot);
         }
-        b"method" => {
+        "method" => {
             if let Some(slot) = *current {
                 files[slot].functions_found += 1;
 
-                let rate = attr(e, b"line-rate")
+                let rate = attr(e, "line-rate")
                     .and_then(|v| v.parse::<f64>().ok())
                     .unwrap_or(0.0);
 
@@ -125,22 +125,22 @@ fn on_element(
             }
         }
         // Lines are also listed inside each method; only the class-level list counts.
-        b"line" if method_depth == 0 => {
+        "line" if method_depth == 0 => {
             if let Some(slot) = *current {
                 let acc = &mut files[slot];
-                let hits = attr(e, b"hits")
+                let hits = attr(e, "hits")
                     .and_then(|v| v.parse::<u64>().ok())
                     .unwrap_or(0);
 
-                if let Some(number) = attr(e, b"number").and_then(|v| v.parse::<u32>().ok()) {
+                if let Some(number) = attr(e, "number").and_then(|v| v.parse::<u32>().ok()) {
                     let entry = acc.line_hits.entry(number).or_insert(0);
 
                     *entry = entry.saturating_add(hits);
                 }
 
-                if attr(e, b"branch").as_deref() == Some("true")
+                if attr(e, "branch").as_deref() == Some("true")
                     && let Some((covered, total)) =
-                        parse_condition(attr(e, b"condition-coverage").as_deref())
+                        parse_condition(attr(e, "condition-coverage").as_deref())
                 {
                     acc.branches_found += total;
 
