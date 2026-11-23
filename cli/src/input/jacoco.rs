@@ -16,7 +16,7 @@ struct SourceFile {
     methods: Option<(u64, u64)>,
 }
 
-/// Functions come from a METHOD counter. JaCoCo emits one on the sourcefile,
+/// Functions come from a METHOD counter. `JaCoCo` emits one on the sourcefile,
 /// but older reports only carry it on each class; this collects both so the
 /// sourcefile's own counter is preferred with a per-class fallback.
 struct Parser {
@@ -54,7 +54,7 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                 parser.open(e.name().as_ref(), &e);
 
                 parser.stack.push(e.name().as_ref().to_owned());
-            }
+            },
             Event::Empty(e) => parser.open(e.name().as_ref(), &e),
             Event::End(e) => {
                 parser.stack.pop();
@@ -62,8 +62,8 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                 if e.name().as_ref() == "sourcefile" {
                     parser.close_sourcefile();
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -79,7 +79,7 @@ impl Parser {
                 self.package = attr(e, "name").unwrap_or_default();
 
                 self.class_methods.clear();
-            }
+            },
             "class" => self.class_sourcefile = attr(e, "sourcefilename"),
             "sourcefile" => {
                 let name = attr(e, "name").unwrap_or_default();
@@ -98,23 +98,24 @@ impl Parser {
                 });
 
                 self.current = Some(slot);
-            }
+            },
             "line" => self.on_line(e),
             "counter" => self.on_counter(e),
-            _ => {}
+            _ => {},
         }
     }
 
     fn on_line(&mut self, e: &BytesStart) {
         let Some(slot) = self.current else { return };
-        let Some(nr) = attr_u64(e, "nr") else { return };
+        let Some(nr) = attr(e, "nr").and_then(|v| v.trim().parse::<u32>().ok()) else {
+            return;
+        };
         let covered_instr = attr_u64(e, "ci").unwrap_or(0);
         let missed_branches = attr_u64(e, "mb").unwrap_or(0);
         let covered_branches = attr_u64(e, "cb").unwrap_or(0);
         let file = &mut self.files[slot];
 
-        file.line_hits
-            .insert(nr as u32, u64::from(covered_instr > 0));
+        file.line_hits.insert(nr, u64::from(covered_instr > 0));
 
         file.branches_found += missed_branches + covered_branches;
 
@@ -134,7 +135,7 @@ impl Parser {
                 if let Some(slot) = self.current {
                     self.files[slot].methods = Some((missed + covered, covered));
                 }
-            }
+            },
             Some("class") => {
                 if let Some(source) = &self.class_sourcefile {
                     let entry = self.class_methods.entry(source.clone()).or_insert((0, 0));
@@ -143,8 +144,8 @@ impl Parser {
 
                     entry.1 += covered;
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 

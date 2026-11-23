@@ -23,7 +23,7 @@ pub struct Counts {
 }
 
 impl Counts {
-    pub fn add(&mut self, other: &Counts) {
+    pub const fn add(&mut self, other: &Self) {
         self.lines_found += other.lines_found;
         self.lines_hit += other.lines_hit;
         self.functions_found += other.functions_found;

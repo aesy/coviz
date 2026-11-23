@@ -22,7 +22,7 @@ fn main() -> ExitCode {
         Err(err) => {
             eprintln!("{err}");
             ExitCode::FAILURE
-        }
+        },
     }
 }
 
@@ -43,13 +43,11 @@ fn run() -> Result<(), Error> {
     let report = input::parse(format, content)?;
 
     if report.files.is_empty() {
-        return Err(Error::NoCoverageData {
-            path: cli.input.clone(),
-        });
+        return Err(Error::NoCoverageData { path: cli.input });
     }
 
     let tree = output::tree::build(&report.files);
-    let input_dir = cli.input.parent().unwrap_or(Path::new("."));
+    let input_dir = cli.input.parent().unwrap_or_else(|| Path::new("."));
     let sources = output::sources::collect(&report.files, tree.prefix.len(), input_dir);
     let title = tree
         .prefix
@@ -84,10 +82,10 @@ fn run() -> Result<(), Error> {
 }
 
 fn input_stem(input: &Path) -> String {
-    input
-        .file_stem()
-        .map(|stem| stem.to_string_lossy().into_owned())
-        .unwrap_or_else(|| "report".to_string())
+    input.file_stem().map_or_else(
+        || "report".to_string(),
+        |stem| stem.to_string_lossy().into_owned(),
+    )
 }
 
 fn temp_output(input: &Path) -> PathBuf {
@@ -97,6 +95,7 @@ fn temp_output(input: &Path) -> PathBuf {
 fn unix_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_millis() as u64)
-        .unwrap_or(0)
+        .map_or(0, |duration| {
+            u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
+        })
 }

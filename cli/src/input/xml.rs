@@ -10,7 +10,7 @@ pub fn attr(element: &BytesStart, key: &str) -> Option<String> {
 
     unescape(&attribute.value)
         .ok()
-        .map(|value| value.into_owned())
+        .map(std::borrow::Cow::into_owned)
 }
 
 pub fn attr_u64(element: &BytesStart, key: &str) -> Option<u64> {

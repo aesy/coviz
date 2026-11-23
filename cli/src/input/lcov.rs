@@ -123,8 +123,8 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                 current = Some(slot);
 
                 continue;
-            }
-            _ => {}
+            },
+            _ => {},
         }
 
         let Some(slot) = current else {
@@ -136,104 +136,7 @@ pub fn parse(content: &str) -> Result<Report, Error> {
             }
             continue;
         };
-        let state = &mut files[slot].1;
-
-        match record {
-            "DA" => {
-                let mut parts = value.splitn(3, ',');
-                let line_no = parse_number(parts.next(), line_number, line)?;
-                let hits = parse_count(parts.next(), line_number, line)?;
-
-                *state.line_hits.entry(line_no as u32).or_insert(0) += hits;
-            }
-            "FN" => {
-                let (_, rest) = value
-                    .split_once(',')
-                    .ok_or_else(|| invalid(line_number, line))?;
-                let name = match rest.split_once(',') {
-                    Some((end_line, tail))
-                        if !end_line.is_empty() && end_line.chars().all(|c| c.is_ascii_digit()) =>
-                    {
-                        tail
-                    }
-                    _ => rest,
-                };
-
-                state.function_hits.entry(name.to_string()).or_insert(0);
-            }
-            "FNDA" => {
-                let (count, name) = value
-                    .split_once(',')
-                    .ok_or_else(|| invalid(line_number, line))?;
-                let hits = parse_count(Some(count), line_number, line)?;
-
-                *state.function_hits.entry(name.to_string()).or_insert(0) += hits;
-            }
-            "FNA" => {
-                let mut parts = value.splitn(3, ',');
-                let _index = parts.next();
-                let hits = parse_count(parts.next(), line_number, line)?;
-                let name = parts.next().ok_or_else(|| invalid(line_number, line))?;
-
-                *state.function_hits.entry(name.to_string()).or_insert(0) += hits;
-            }
-            // The leader only carries the group's line range; names and counts
-            // arrive on the FNA aliases, which is what we count.
-            "FNL" => {}
-            "FNF" => state.declared.functions_found = parse_number(Some(value), line_number, line)?,
-            "FNH" => state.declared.functions_hit = parse_number(Some(value), line_number, line)?,
-            "LF" => state.declared.lines_found = parse_number(Some(value), line_number, line)?,
-            "LH" => state.declared.lines_hit = parse_number(Some(value), line_number, line)?,
-            "BRF" => state.declared.branches_found = parse_number(Some(value), line_number, line)?,
-            "BRH" => state.declared.branches_hit = parse_number(Some(value), line_number, line)?,
-            "BRDA" => {
-                // BRDA:<line>,[e|f|U]<block>,<branch>,<taken> - the branch id may
-                // itself contain commas, so <taken> is peeled off as the last field.
-                let (line_str, rest) = value
-                    .split_once(',')
-                    .ok_or_else(|| invalid(line_number, line))?;
-                let line_no = parse_number(Some(line_str), line_number, line)? as u32;
-                let (head, taken) = rest
-                    .rsplit_once(',')
-                    .ok_or_else(|| invalid(line_number, line))?;
-                let (block, branch) = head
-                    .split_once(',')
-                    .ok_or_else(|| invalid(line_number, line))?;
-                let taken = if taken.trim() == "-" {
-                    None
-                } else {
-                    Some(parse_count(Some(taken), line_number, line)?)
-                };
-                let key = (line_no, block.to_string(), branch.to_string());
-                let entry = state.branch_taken.entry(key).or_insert(None);
-
-                *entry = match (*entry, taken) {
-                    (Some(a), Some(b)) => Some(a + b),
-                    (existing, new) => new.or(existing),
-                };
-            }
-            "MCDC" => {
-                // MCDC:<line>,[U]<groupSize>,<sense>,<taken>,<index>,<expression> -
-                // the expression may contain commas, so it stays as the trailing field.
-                let mut parts = value.splitn(6, ',');
-                let line_no = parse_number(parts.next(), line_number, line)? as u32;
-                let size = parts.next().ok_or_else(|| invalid(line_number, line))?;
-                let sense = parts.next().ok_or_else(|| invalid(line_number, line))?;
-                let taken = parse_count(parts.next(), line_number, line)?;
-                let index = parts.next().ok_or_else(|| invalid(line_number, line))?;
-                let key = (
-                    line_no,
-                    size.to_string(),
-                    index.to_string(),
-                    sense.to_string(),
-                );
-
-                *state.mcdc_taken.entry(key).or_insert(0) += taken;
-            }
-            "MCF" => state.declared.mcdc_found = parse_number(Some(value), line_number, line)?,
-            "MCH" => state.declared.mcdc_hit = parse_number(Some(value), line_number, line)?,
-            _ => {}
-        }
+        apply_record(&mut files[slot].1, record, value, line_number, line)?;
     }
 
     let files = files
@@ -242,6 +145,112 @@ pub fn parse(content: &str) -> Result<Report, Error> {
         .collect();
 
     Ok(Report { files })
+}
+
+fn apply_record(
+    state: &mut FileState,
+    record: &str,
+    value: &str,
+    line_number: usize,
+    line: &str,
+) -> Result<(), Error> {
+    match record {
+        "DA" => {
+            let mut parts = value.splitn(3, ',');
+            let line_no = parse_line(parts.next(), line_number, line)?;
+            let hits = parse_count(parts.next(), line_number, line)?;
+
+            *state.line_hits.entry(line_no).or_insert(0) += hits;
+        },
+        "FN" => {
+            let (_, rest) = value
+                .split_once(',')
+                .ok_or_else(|| invalid(line_number, line))?;
+            let name = match rest.split_once(',') {
+                Some((end_line, tail))
+                    if !end_line.is_empty() && end_line.chars().all(|c| c.is_ascii_digit()) =>
+                {
+                    tail
+                },
+                _ => rest,
+            };
+
+            state.function_hits.entry(name.to_string()).or_insert(0);
+        },
+        "FNDA" => {
+            let (count, name) = value
+                .split_once(',')
+                .ok_or_else(|| invalid(line_number, line))?;
+            let hits = parse_count(Some(count), line_number, line)?;
+
+            *state.function_hits.entry(name.to_string()).or_insert(0) += hits;
+        },
+        "FNA" => {
+            let mut parts = value.splitn(3, ',');
+            let _index = parts.next();
+            let hits = parse_count(parts.next(), line_number, line)?;
+            let name = parts.next().ok_or_else(|| invalid(line_number, line))?;
+
+            *state.function_hits.entry(name.to_string()).or_insert(0) += hits;
+        },
+        "FNF" => state.declared.functions_found = parse_number(Some(value), line_number, line)?,
+        "FNH" => state.declared.functions_hit = parse_number(Some(value), line_number, line)?,
+        "LF" => state.declared.lines_found = parse_number(Some(value), line_number, line)?,
+        "LH" => state.declared.lines_hit = parse_number(Some(value), line_number, line)?,
+        "BRF" => state.declared.branches_found = parse_number(Some(value), line_number, line)?,
+        "BRH" => state.declared.branches_hit = parse_number(Some(value), line_number, line)?,
+        "BRDA" => {
+            // BRDA:<line>,[e|f|U]<block>,<branch>,<taken> - the branch id may
+            // itself contain commas, so <taken> is peeled off as the last field.
+            let (line_str, rest) = value
+                .split_once(',')
+                .ok_or_else(|| invalid(line_number, line))?;
+            let line_no = parse_line(Some(line_str), line_number, line)?;
+            let (head, taken) = rest
+                .rsplit_once(',')
+                .ok_or_else(|| invalid(line_number, line))?;
+            let (block, branch) = head
+                .split_once(',')
+                .ok_or_else(|| invalid(line_number, line))?;
+            let taken = if taken.trim() == "-" {
+                None
+            } else {
+                Some(parse_count(Some(taken), line_number, line)?)
+            };
+            let key = (line_no, block.to_string(), branch.to_string());
+            let entry = state.branch_taken.entry(key).or_insert(None);
+
+            *entry = match (*entry, taken) {
+                (Some(a), Some(b)) => Some(a + b),
+                (existing, new) => new.or(existing),
+            };
+        },
+        "MCDC" => {
+            // MCDC:<line>,[U]<groupSize>,<sense>,<taken>,<index>,<expression> -
+            // the expression may contain commas, so it stays as the trailing field.
+            let mut parts = value.splitn(6, ',');
+            let line_no = parse_line(parts.next(), line_number, line)?;
+            let size = parts.next().ok_or_else(|| invalid(line_number, line))?;
+            let sense = parts.next().ok_or_else(|| invalid(line_number, line))?;
+            let taken = parse_count(parts.next(), line_number, line)?;
+            let index = parts.next().ok_or_else(|| invalid(line_number, line))?;
+            let key = (
+                line_no,
+                size.to_string(),
+                index.to_string(),
+                sense.to_string(),
+            );
+
+            *state.mcdc_taken.entry(key).or_insert(0) += taken;
+        },
+        "MCF" => state.declared.mcdc_found = parse_number(Some(value), line_number, line)?,
+        "MCH" => state.declared.mcdc_hit = parse_number(Some(value), line_number, line)?,
+        // FNL (a function group leader) only carries the group's line range; names and
+        // counts arrive on the FNA aliases, which is what we count.
+        _ => {},
+    }
+
+    Ok(())
 }
 
 fn invalid(line_number: usize, line: &str) -> Error {
@@ -257,6 +266,17 @@ fn parse_number(value: Option<&str>, line_number: usize, line: &str) -> Result<u
         .ok_or_else(|| invalid(line_number, line))
 }
 
+fn parse_line(value: Option<&str>, line_number: usize, line: &str) -> Result<u32, Error> {
+    value
+        .and_then(|v| v.trim().parse::<u32>().ok())
+        .ok_or_else(|| invalid(line_number, line))
+}
+
+#[expect(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    reason = "Fractional counts are filtered to finite non-negative values, and `as` saturates the rest"
+)]
 fn parse_count(value: Option<&str>, line_number: usize, line: &str) -> Result<u64, Error> {
     let value = value.map(str::trim);
 

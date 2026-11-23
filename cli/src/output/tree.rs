@@ -11,7 +11,7 @@ pub struct Node {
     pub path: String,
     pub dir: bool,
     pub counts: Counts,
-    pub children: Vec<Node>,
+    pub children: Vec<Self>,
 }
 
 #[derive(Debug)]
@@ -36,21 +36,20 @@ pub fn build(files: &[FileCoverage]) -> Tree {
         root: root.into_node(String::new(), String::new()),
         prefix: split
             .first()
-            .map(|components| components[..prefix_len].to_vec())
-            .unwrap_or_default(),
+            .map_or_default(|components| components[..prefix_len].to_vec()),
     }
 }
 
 #[derive(Default)]
 struct Dir {
-    dirs: BTreeMap<String, Dir>,
+    dirs: BTreeMap<String, Self>,
     files: Vec<(String, Counts)>,
 }
 
 impl Dir {
     fn insert(&mut self, components: &[String], counts: Counts) {
         match components {
-            [] => {}
+            [] => {},
             [file_name] => self.files.push((file_name.clone(), counts)),
             [dir_name, rest @ ..] => self
                 .dirs
@@ -101,7 +100,8 @@ impl Dir {
     }
 }
 
-/// Merge single-child directory chains: a/(b/(c, files)) becomes "a/b"/(c, files).
+/// Merge single-child directory chains: a/(b/(c, files)) becomes "a/b"/(c,
+/// files).
 fn collapse(mut node: Node) -> Node {
     while node.children.len() == 1 && node.children[0].dir {
         let child = node.children.pop().expect("checked length");

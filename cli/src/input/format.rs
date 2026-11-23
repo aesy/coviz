@@ -13,22 +13,27 @@ pub enum Format {
 
 impl Format {
     /// Resolve a format from the file name, falling back to inspecting the
-    /// content when the extension is ambiguous (e.g. JaCoCo vs Cobertura `.xml`).
-    pub fn detect(path: &Path, content: &str) -> Option<Format> {
-        if let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_lowercase()) {
-            if name.ends_with(".lcov") || name.ends_with(".info") {
-                return Some(Format::Lcov);
-            }
-            if name.ends_with(".json") {
-                return Some(Format::LlvmJson);
-            }
-            if name.ends_with(".xml") {
-                return sniff(content);
-            }
-            if name.contains("lcov") {
-                return Some(Format::Lcov);
-            }
+    /// content when the extension is ambiguous (e.g. `JaCoCo` vs Cobertura
+    /// `.xml`).
+    pub fn detect(path: &Path, content: &str) -> Option<Self> {
+        let extension = path
+            .extension()
+            .map(|e| e.to_string_lossy().to_ascii_lowercase());
+
+        match extension.as_deref() {
+            Some("lcov" | "info") => return Some(Self::Lcov),
+            Some("json") => return Some(Self::LlvmJson),
+            Some("xml") => return sniff(content),
+            _ => {},
         }
+
+        if path
+            .file_name()
+            .is_some_and(|n| n.to_string_lossy().to_ascii_lowercase().contains("lcov"))
+        {
+            return Some(Self::Lcov);
+        }
+
         sniff(content)
     }
 }

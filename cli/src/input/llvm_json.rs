@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::btree_map::Entry;
 use std::fmt;
 use std::fmt::Formatter;
 
@@ -30,7 +31,7 @@ struct FileEntry {
 }
 
 /// `[line, column, count, has_count, is_region_entry, is_gap_region]`; only
-/// line, count and has_count drive source-view coloring. Export 2.0.0 omits
+/// line, count and `has_count` drive source-view coloring. Export 2.0.0 omits
 /// the last field, and older llvm-cov writes the flags as 0/1.
 struct Segment {
     line: u32,
@@ -85,10 +86,10 @@ enum Flag {
 }
 
 impl Flag {
-    fn is_set(&self) -> bool {
+    const fn is_set(&self) -> bool {
         match self {
-            Flag::Bool(value) => *value,
-            Flag::Int(value) => *value != 0,
+            Self::Bool(value) => *value,
+            Self::Int(value) => *value != 0,
         }
     }
 }
@@ -127,8 +128,14 @@ pub fn parse(content: &str) -> Result<Report, Error> {
     for data in export.data {
         for file in data.files {
             let line_hits = line_hits(&file.segments);
-            let counts = match &file.summary {
-                Some(summary) => Counts {
+            let counts = file.summary.as_ref().map_or_else(
+                // Without a summary, the segment gutter counts are the only line data.
+                || Counts {
+                    lines_found: line_hits.len() as u64,
+                    lines_hit: line_hits.values().filter(|hits| **hits > 0).count() as u64,
+                    ..Counts::default()
+                },
+                |summary| Counts {
                     lines_found: summary.lines.count,
                     lines_hit: summary.lines.covered,
                     functions_found: summary.functions.count,
@@ -138,18 +145,12 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                     mcdc_found: summary.mcdc.count,
                     mcdc_hit: summary.mcdc.covered,
                 },
-                // Without a summary, the segment gutter counts are the only line data.
-                None => Counts {
-                    lines_found: line_hits.len() as u64,
-                    lines_hit: line_hits.values().filter(|hits| **hits > 0).count() as u64,
-                    ..Counts::default()
-                },
-            };
+            );
 
-            match index.get(&file.filename) {
-                Some(&slot) => merge(&mut files[slot].1, counts, line_hits),
-                None => {
-                    index.insert(file.filename.clone(), files.len());
+            match index.entry(file.filename.clone()) {
+                Entry::Occupied(slot) => merge(&mut files[*slot.get()].1, counts, line_hits),
+                Entry::Vacant(slot) => {
+                    slot.insert(files.len());
 
                     files.push((
                         file.filename.clone(),
@@ -159,7 +160,7 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                             counts,
                         },
                     ));
-                }
+                },
             }
         }
     }

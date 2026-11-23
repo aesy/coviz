@@ -12,7 +12,8 @@ pub struct Cli {
     #[arg(short, long)]
     pub input: PathBuf,
 
-    /// Input format, determined from the input file name or contents when omitted
+    /// Input format, determined from the input file name or contents when
+    /// omitted
     #[arg(short, long, value_enum)]
     pub format: Option<Format>,
 

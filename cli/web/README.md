@@ -16,7 +16,7 @@ embeds and fills with per-run data.
 `index.html` carries two template tokens the bundler leaves untouched:
 `[[= title =]]` in the `<title>` and `[[= data =]]` in a JSON `<script>`. At report
 time the Rust side renders them with minijinja (see `src/output/html.rs`). The
-custom `[[= … =]]` delimiters avoid colliding with `{{ }}` that can appear in
+custom `[[= ... =]]` delimiters avoid colliding with `{{ }}` that can appear in
 minified JS.
 
 ## Layout

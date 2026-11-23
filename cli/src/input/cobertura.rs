@@ -66,7 +66,7 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                 if e.name().as_ref() == "method" {
                     method_depth += 1;
                 }
-            }
+            },
             Event::Empty(e) => {
                 on_element(
                     e.name().as_ref(),
@@ -76,11 +76,11 @@ pub fn parse(content: &str) -> Result<Report, Error> {
                     &mut current,
                     method_depth,
                 );
-            }
+            },
             Event::End(e) if e.name().as_ref() == "method" => {
                 method_depth = method_depth.saturating_sub(1);
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -110,7 +110,7 @@ fn on_element(
             });
 
             *current = Some(slot);
-        }
+        },
         "method" => {
             if let Some(slot) = *current {
                 files[slot].functions_found += 1;
@@ -123,7 +123,7 @@ fn on_element(
                     files[slot].functions_hit += 1;
                 }
             }
-        }
+        },
         // Lines are also listed inside each method; only the class-level list counts.
         "line" if method_depth == 0 => {
             if let Some(slot) = *current {
@@ -147,8 +147,8 @@ fn on_element(
                     acc.branches_hit += covered;
                 }
             }
-        }
-        _ => {}
+        },
+        _ => {},
     }
 }
 
