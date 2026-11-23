@@ -1,6 +1,10 @@
 use std::collections::BTreeMap;
+use std::fmt;
+use std::fmt::Formatter;
 
+use json_comments::CommentSettings;
 use serde::Deserialize;
+use serde::de::{self, Deserializer, IgnoredAny, SeqAccess, Visitor};
 
 use crate::error::Error;
 use crate::model::{Counts, FileCoverage, Report};
@@ -22,16 +26,78 @@ struct FileEntry {
     filename: String,
     #[serde(default)]
     segments: Vec<Segment>,
-    summary: Summary,
+    summary: Option<Summary>,
 }
 
-/// `[line, column, count, has_count, is_region_entry, is_gutter_count]`; only
-/// line, count and has_count drive source-view coloring.
-type Segment = (u32, u32, u64, bool, bool, bool);
+/// `[line, column, count, has_count, is_region_entry, is_gap_region]`; only
+/// line, count and has_count drive source-view coloring. Export 2.0.0 omits
+/// the last field, and older llvm-cov writes the flags as 0/1.
+struct Segment {
+    line: u32,
+    count: u64,
+    has_count: bool,
+}
+
+impl<'de> Deserialize<'de> for Segment {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_seq(SegmentVisitor)
+    }
+}
+
+struct SegmentVisitor;
+
+impl<'de> Visitor<'de> for SegmentVisitor {
+    type Value = Segment;
+
+    fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+        formatter.write_str("a coverage segment array")
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Segment, A::Error> {
+        let line = seq
+            .next_element()?
+            .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+        let _column: u32 = seq
+            .next_element()?
+            .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+        let count = seq
+            .next_element()?
+            .ok_or_else(|| de::Error::invalid_length(2, &self))?;
+        let has_count: Flag = seq
+            .next_element()?
+            .ok_or_else(|| de::Error::invalid_length(3, &self))?;
+
+        while seq.next_element::<IgnoredAny>()?.is_some() {}
+
+        Ok(Segment {
+            line,
+            count,
+            has_count: has_count.is_set(),
+        })
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum Flag {
+    Bool(bool),
+    Int(u64),
+}
+
+impl Flag {
+    fn is_set(&self) -> bool {
+        match self {
+            Flag::Bool(value) => *value,
+            Flag::Int(value) => *value != 0,
+        }
+    }
+}
 
 #[derive(Deserialize)]
 struct Summary {
+    #[serde(default)]
     lines: Metric,
+    #[serde(default)]
     functions: Metric,
     #[serde(default)]
     branches: Metric,
@@ -48,23 +114,37 @@ struct Metric {
 }
 
 pub fn parse(content: &str) -> Result<Report, Error> {
-    let export: Export = serde_json::from_str(content)?;
+    // llvm-cov never writes comments, so only hand-edited files take the slower
+    // reader path. Comments become whitespace, keeping error positions intact.
+    let export: Export = if content.contains("//") || content.contains("/*") {
+        serde_json::from_reader(CommentSettings::c_style().strip_comments(content.as_bytes()))?
+    } else {
+        serde_json::from_str(content)?
+    };
     let mut files: Vec<(String, FileCoverage)> = Vec::new();
     let mut index: BTreeMap<String, usize> = BTreeMap::new();
 
     for data in export.data {
         for file in data.files {
-            let counts = Counts {
-                lines_found: file.summary.lines.count,
-                lines_hit: file.summary.lines.covered,
-                functions_found: file.summary.functions.count,
-                functions_hit: file.summary.functions.covered,
-                branches_found: file.summary.branches.count,
-                branches_hit: file.summary.branches.covered,
-                mcdc_found: file.summary.mcdc.count,
-                mcdc_hit: file.summary.mcdc.covered,
-            };
             let line_hits = line_hits(&file.segments);
+            let counts = match &file.summary {
+                Some(summary) => Counts {
+                    lines_found: summary.lines.count,
+                    lines_hit: summary.lines.covered,
+                    functions_found: summary.functions.count,
+                    functions_hit: summary.functions.covered,
+                    branches_found: summary.branches.count,
+                    branches_hit: summary.branches.covered,
+                    mcdc_found: summary.mcdc.count,
+                    mcdc_hit: summary.mcdc.covered,
+                },
+                // Without a summary, the segment gutter counts are the only line data.
+                None => Counts {
+                    lines_found: line_hits.len() as u64,
+                    lines_hit: line_hits.values().filter(|hits| **hits > 0).count() as u64,
+                    ..Counts::default()
+                },
+            };
 
             match index.get(&file.filename) {
                 Some(&slot) => merge(&mut files[slot].1, counts, line_hits),
@@ -95,11 +175,11 @@ pub fn parse(content: &str) -> Result<Report, Error> {
 fn line_hits(segments: &[Segment]) -> BTreeMap<u32, u64> {
     let mut hits: BTreeMap<u32, u64> = BTreeMap::new();
 
-    for &(line, _, count, has_count, ..) in segments {
-        if has_count {
-            let entry = hits.entry(line).or_insert(0);
+    for segment in segments {
+        if segment.has_count {
+            let entry = hits.entry(segment.line).or_insert(0);
 
-            *entry = (*entry).max(count);
+            *entry = (*entry).max(segment.count);
         }
     }
 
@@ -188,6 +268,64 @@ mod tests {
         assert_eq!((c.lines_found, c.lines_hit), (4, 3));
 
         assert_eq!(report.files[0].line_hits.get(&1), Some(&5));
+    }
+
+    #[test]
+    fn reads_export_2_0_0_segments_with_integer_flags() {
+        let doc = r#"{"version":"2.0.0","data":[{"files":[{"filename":"a.c",
+          "segments":[[1,1,4,1,1],[2,1,0,true,true],[3,1,9,0,0]],
+          "summary":{"lines":{"count":2,"covered":1},"functions":{"count":1,"covered":1}}}]}]}"#;
+        let hits = &parse(doc).unwrap().files[0].line_hits;
+
+        assert_eq!(hits.get(&1), Some(&4));
+
+        assert_eq!(hits.get(&2), Some(&0));
+
+        assert_eq!(hits.get(&3), None);
+    }
+
+    #[test]
+    fn missing_summary_metrics_default_to_zero() {
+        let doc = r#"{"data":[{"files":[{"filename":"a.rs","segments":[],
+          "summary":{"lines":{"count":4,"covered":3}}}]}]}"#;
+        let c = parse(doc).unwrap().files[0].counts;
+
+        assert_eq!((c.lines_found, c.lines_hit), (4, 3));
+
+        assert_eq!((c.functions_found, c.functions_hit), (0, 0));
+    }
+
+    #[test]
+    fn missing_summary_counts_lines_from_segments() {
+        let doc = r#"{"data":[{"files":[{"filename":"a.rs",
+          "segments":[[1,1,2,true,true,false],[2,1,0,true,true,false],[3,1,0,false,false,false]]}]}]}"#;
+        let c = parse(doc).unwrap().files[0].counts;
+
+        assert_eq!((c.lines_found, c.lines_hit), (2, 1));
+    }
+
+    #[test]
+    fn ignores_comments_but_not_slashes_in_strings() {
+        let doc = r#"{"data":[{"files":[{
+          "filename": "//server/share/a.rs", // UNC path
+          "segments": [[1, 1, 2, true, true, false]], /* gutter */
+          "summary": {"lines": {"count": 1, "covered": 1}}
+        }]}]}"#;
+        let file = &parse(doc).unwrap().files[0];
+
+        assert_eq!(file.path, "//server/share/a.rs");
+
+        assert_eq!(file.counts.lines_hit, 1);
+    }
+
+    #[test]
+    fn errors_in_commented_json_keep_their_position() {
+        let doc = "{\n// note\n\"data\": [,]}";
+        let Err(Error::Json { source }) = parse(doc) else {
+            panic!("expected a JSON error");
+        };
+
+        assert_eq!(source.line(), 3);
     }
 
     #[test]

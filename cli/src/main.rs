@@ -28,17 +28,19 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), Error> {
     let cli = Cli::parse();
-    let content = fs::read_to_string(&cli.input).map_err(|source| Error::InputRead {
+    let raw = fs::read_to_string(&cli.input).map_err(|source| Error::InputRead {
         path: cli.input.clone(),
         source,
     })?;
+    // Windows tools (e.g. Pester's JaCoCo writer) prefix a UTF-8 byte order mark.
+    let content = raw.strip_prefix('\u{feff}').unwrap_or(&raw);
     let format = cli
         .format
-        .or_else(|| Format::detect(&cli.input, &content))
+        .or_else(|| Format::detect(&cli.input, content))
         .ok_or_else(|| Error::FormatUnknown {
             path: cli.input.clone(),
         })?;
-    let report = input::parse(format, &content)?;
+    let report = input::parse(format, content)?;
 
     if report.files.is_empty() {
         return Err(Error::NoCoverageData {

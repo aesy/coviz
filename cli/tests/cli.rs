@@ -74,3 +74,31 @@ fn rejects_undetectable_format() {
         "{stderr}"
     );
 }
+
+#[test]
+fn detects_xml_format_behind_a_byte_order_mark() {
+    let input = output_path("bom-jacoco.xml");
+
+    fs::write(
+        &input,
+        "\u{feff}<?xml version=\"1.0\"?><report name=\"r\"><package name=\"p\">\
+         <sourcefile name=\"A.java\"><line nr=\"1\" mi=\"0\" ci=\"2\" mb=\"0\" cb=\"0\"/>\
+         </sourcefile></package></report>",
+    )
+    .unwrap();
+
+    let output = output_path("bom-report.html");
+    let result = Command::new(env!("CARGO_BIN_EXE_coviz"))
+        .arg("--input")
+        .arg(&input)
+        .arg("--output")
+        .arg(&output)
+        .output()
+        .unwrap();
+
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+}
