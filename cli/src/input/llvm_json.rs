@@ -129,7 +129,8 @@ pub fn parse(content: &str) -> Result<Report, Error> {
         for file in data.files {
             let line_hits = line_hits(&file.segments);
             let counts = file.summary.as_ref().map_or_else(
-                // Without a summary, the segment gutter counts are the only line data.
+                // Without a summary, the segment gutter counts are the only
+                // line data.
                 || Counts {
                     lines_found: line_hits.len() as u64,
                     lines_hit: line_hits.values().filter(|hits| **hits > 0).count() as u64,

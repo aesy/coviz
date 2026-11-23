@@ -32,7 +32,8 @@ fn run() -> Result<(), Error> {
         path: cli.input.clone(),
         source,
     })?;
-    // Windows tools (e.g. Pester's JaCoCo writer) prefix a UTF-8 byte order mark.
+    // Windows tools (e.g. Pester's JaCoCo writer) prefix a UTF-8 byte order
+    // mark.
     let content = raw.strip_prefix('\u{feff}').unwrap_or(&raw);
     let format = cli
         .format

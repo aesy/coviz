@@ -124,7 +124,8 @@ fn on_element(
                 }
             }
         },
-        // Lines are also listed inside each method; only the class-level list counts.
+        // Lines are also listed inside each method; only the class-level list
+        // counts.
         "line" if method_depth == 0 => {
             if let Some(slot) = *current {
                 let acc = &mut files[slot];
@@ -214,7 +215,8 @@ mod tests {
     fn does_not_double_count_lines_listed_under_methods() {
         let report = parse(SAMPLE).unwrap();
 
-        // line 2 appears under both method a and class lines; hits must not add up to 6
+        // line 2 appears under both method a and class lines; hits must not add
+        // up to 6
         assert_eq!(report.files[0].line_hits.get(&2), Some(&3));
     }
 

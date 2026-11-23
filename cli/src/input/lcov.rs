@@ -201,7 +201,8 @@ fn apply_record(
         "BRH" => state.declared.branches_hit = parse_number(Some(value), line_number, line)?,
         "BRDA" => {
             // BRDA:<line>,[e|f|U]<block>,<branch>,<taken> - the branch id may
-            // itself contain commas, so <taken> is peeled off as the last field.
+            // itself contain commas, so <taken> is peeled off as the last
+            // field.
             let (line_str, rest) = value
                 .split_once(',')
                 .ok_or_else(|| invalid(line_number, line))?;
@@ -227,7 +228,8 @@ fn apply_record(
         },
         "MCDC" => {
             // MCDC:<line>,[U]<groupSize>,<sense>,<taken>,<index>,<expression> -
-            // the expression may contain commas, so it stays as the trailing field.
+            // the expression may contain commas, so it stays as the trailing
+            // field.
             let mut parts = value.splitn(6, ',');
             let line_no = parse_line(parts.next(), line_number, line)?;
             let size = parts.next().ok_or_else(|| invalid(line_number, line))?;
@@ -245,8 +247,8 @@ fn apply_record(
         },
         "MCF" => state.declared.mcdc_found = parse_number(Some(value), line_number, line)?,
         "MCH" => state.declared.mcdc_hit = parse_number(Some(value), line_number, line)?,
-        // FNL (a function group leader) only carries the group's line range; names and
-        // counts arrive on the FNA aliases, which is what we count.
+        // FNL (a function group leader) only carries the group's line range;
+        // names and counts arrive on the FNA aliases, which is what we count.
         _ => {},
     }
 
